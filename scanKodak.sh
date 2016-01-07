@@ -29,8 +29,9 @@ fi
 echo Will output to file "$FILE"
 
 #Scan pages and store .tiffs
+#'-d avision' hardcodes the kodak scanner. It is not necessary if you have only one scanner connected, however 'scanimage -L' shows sometimes other devices like webcams as scanners (and picks the first one) If you're using a different device, remove or change this argument.
 echo Starting scan...
-scanimage --format tiff -p --batch=$TMPFILE%04d.tiff --source 'ADF Duplex' --resolution $dpi
+scanimage -d avision --format tiff -p --batch=$TMPFILE%04d.tiff --source 'ADF Duplex' --resolution $dpi
 
 #use imagemagick to compress all tiffs and glue them to a single pdf
 echo Glueing pages...
@@ -41,15 +42,13 @@ if [[ ! -f $FILE ]]
 then
 	#File does not exist. This is easy
 	echo Creating new PDF $FILE and fixing title.
-	#creating tmpfile because pdftk's update_info apparently can't read inline
-	echo -en "InfoKey: Title\nInfoValue: $FILE\n" > $TMPFILE.title
 	#updating the title because "tmp.rvvk8ozNjn.pdf" just doesn't look good in the title bar, also moving the file away from tmp
-	pdftk $TMPFILE.all.pdf update_info $TMPFILE.title output "$FILE"
+	exiftool -q $TMPFILE.all.pdf -title="${FILE}" -author=$USER -o "$FILE"
 else
 	#File exists. cat'ing files together
 	echo Appending to existing PDF $FILE
 	mv "$FILE" "$FILE.tmp.pdf"
-	pdftk "$FILE.tmp.pdf" $TMPFILE.all.pdf cat output "$FILE"
+	qpdf "$FILE.tmp.pdf" --pages "$FILE.tmp.pdf" $TMPFILE.all.pdf -- "$FILE"
 	rm "$FILE.tmp.pdf"
 fi
 
