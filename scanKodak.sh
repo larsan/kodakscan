@@ -2,23 +2,49 @@
 
 # Scans from a hard-coded scanner to a pdf in the current directory
 
-TMPFILE=$(mktemp)
+usage() {
+  echo "scanKodak.sh [OPTIONS...]"
+  echo
+  echo "General options:"
+  echo "  -f FILE    Give output file name [default: \`date +%F %H%M%S\`]"
+  echo "  -c         Scan in color [default: gray scale]"
+  echo "  -q         Set output JPEG quality to 85% [default: 50%]"
+  echo "  -r RES     Set resolution in dpi [default 150 dpi]"
+  echo "  -# NUM     Number of pages to scan"
+  echo
+  echo "Source selection:"
+  echo "  -s    Specify scan source: Normal | ADF Front | ADF Back | ADF Duplex"
+  echo "          [default: ADF Duplex]"
+  echo "  -o    Scan only front pages from feeder (shortcut for -s 'ADF Front')"
+  echo "  -d    Scan front and back pages from feeder (shortcut for -s 'ADF Duplex')"
+  echo "          [default]"
+  echo "  -n    Scan pages from flatbed (shortcut for -s 'Normal')"
+}
 
 gs='-type Grayscale'
 qual='50%'
 dpi='150'
+paper_source='ADF Duplex'
+page_count=''
 
 # Get options
-while getopts ":f:cqr:" Option
+while getopts ":f:cqr:s:odn#:h" Option
 do
   case $Option in
     f ) FILE=$OPTARG;;
     c ) gs='';;
     q ) qual='85%';;
     r ) dpi=$OPTARG;;
+    s ) paper_source=$OPTARG;;
+    o ) paper_source='ADF Front';;
+    d ) paper_source='ADF Duplex';;
+    n ) paper_source='Normal'; page_count='--batch-count=1';;
+    '#' ) page_count="--batch-count=$OPTARG";;
+    h ) usage; exit;;
   esac
 done
 
+TMPFILE=$(mktemp)
 
 # Check if file is set
 if [[ ! "$FILE" ]]
@@ -31,7 +57,7 @@ echo Will output to file "$FILE"
 #Scan pages and store .tiffs
 #'-d avision' hardcodes the kodak scanner. It is not necessary if you have only one scanner connected, however 'scanimage -L' shows sometimes other devices like webcams as scanners (and picks the first one) If you're using a different device, remove or change this argument.
 echo Starting scan...
-scanimage -d avision --format tiff -p --batch=$TMPFILE%04d.tiff --source 'ADF Duplex' --resolution $dpi
+scanimage -d avision --format tiff -p --batch=$TMPFILE%04d.tiff $page_count --source "$paper_source" --resolution $dpi
 
 #use imagemagick to compress all tiffs and glue them to a single pdf
 echo Glueing pages...
