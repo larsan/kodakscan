@@ -39,7 +39,7 @@ do
     o ) paper_source='ADF Front';;
     d ) paper_source='ADF Duplex';;
     n ) paper_source='Normal'; page_count='--batch-count=1';;
-    '#' ) page_count="--batch-count=$OPTARG";;
+    '#' ) page_count="--batch-count=$OPTARG --batch-prompt";;
     h ) usage; exit;;
   esac
 done
